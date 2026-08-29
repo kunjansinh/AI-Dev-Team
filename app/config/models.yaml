@@ -1,0 +1,35 @@
+# config/models.yaml — single source of truth for model routing
+roles:
+  manager:
+    provider: ollama
+    model: qwen3:1.7b
+    timeout_s: 60
+
+  researcher:
+    provider: ollama
+    model: qwen3:1.7b
+    timeout_s: 60
+
+  qa:
+    provider: ollama
+    model: qwen3:1.7b
+    timeout_s: 60
+
+  security:
+    provider: ollama
+    model: qwen3:1.7b
+    timeout_s: 60
+
+  developer:
+    provider: ollama          # switch to "cloud" once Step 3 is wired in
+    model: qwen3:4b
+    timeout_s: 120
+    cloud_fallback:
+      provider: cloud
+      model: "deepseek/deepseek-chat-v3-0324:free"   # example free OpenRouter model
+      timeout_s: 60
+
+  architect:
+    provider: ollama
+    model: qwen3:4b
+    timeout_s: 120
