@@ -26,17 +26,21 @@ def healthz():
 def models():
     registry = ModelRegistry()
 
+    registered_models = []
+
+    for model_name in registry.list_models():
+        model = registry.get(model_name)
+
+        registered_models.append({
+            "name": model.name,
+            "purpose": model.purpose
+        })
+
     return {
         "manager_model": settings.manager_model,
         "default_model": settings.default_model,
         "heavy_model": settings.heavy_model,
-        "models": [
-            {
-                "name": registry.get(model_name).name,
-                "purpose": registry.get(model_name).purpose
-            }
-            for model_name in registry.list_models()
-        ]
+        "models": registered_models
     }
 
 
