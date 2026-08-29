@@ -1,5 +1,43 @@
+from fastapi import FastAPI
+
 from app.config.settings import settings
 from app.tools.llm.model_registry import ModelRegistry
+
+
+app = FastAPI(title="AI Dev Team")
+
+
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "message": "AI Dev Team is running"
+    }
+
+
+@app.get("/healthz")
+def healthz():
+    return {
+        "status": "healthy"
+    }
+
+
+@app.get("/models")
+def models():
+    registry = ModelRegistry()
+
+    return {
+        "manager_model": settings.manager_model,
+        "default_model": settings.default_model,
+        "heavy_model": settings.heavy_model,
+        "models": [
+            {
+                "name": registry.get(model_name).name,
+                "purpose": registry.get(model_name).purpose
+            }
+            for model_name in registry.list_models()
+        ]
+    }
 
 
 def main() -> None:
