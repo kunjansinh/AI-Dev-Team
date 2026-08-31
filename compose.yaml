@@ -1,0 +1,13 @@
+﻿services:
+  ai-dev-team:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-dev-team
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    command: python -m pytest -q

@@ -37,6 +37,7 @@ class DeveloperAgent(BaseAgent):
 
         self.testing_tool = testing_tool or TestingTool()
         self.tool_manager = tool_manager
+        self._tool_execution_log: list[dict[str, Any]] = []
 
     def execute(
         self,
@@ -55,6 +56,7 @@ class DeveloperAgent(BaseAgent):
         )
 
         self._update_agent_status("working")
+        self._tool_execution_log = []
 
         prompt = self._build_developer_prompt(task)
 
@@ -106,6 +108,7 @@ class DeveloperAgent(BaseAgent):
                 "iteration": task["iteration"],
                 "written_files": written_files,
                 "validation": validation,
+                "tool_calls": list(self._tool_execution_log),
             }
 
             self.task_manager.record_result(
@@ -140,6 +143,7 @@ class DeveloperAgent(BaseAgent):
                 "status": "error",
                 "iteration": task["iteration"],
                 "written_files": [],
+                "tool_calls": list(self._tool_execution_log),
                 "validation": {
                     "status": "error",
                     "tests_collected": 0,
@@ -171,6 +175,7 @@ class DeveloperAgent(BaseAgent):
             relative_path=relative_path,
             content=content,
         )
+        self._tool_execution_log.append(result)
 
         if result["status"] != "success":
             raise PermissionError(
@@ -189,6 +194,7 @@ class DeveloperAgent(BaseAgent):
             self.name,
             "run_tests",
         )
+        self._tool_execution_log.append(result)
 
         if result["status"] != "success":
             raise RuntimeError(
