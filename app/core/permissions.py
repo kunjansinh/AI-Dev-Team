@@ -27,6 +27,7 @@ class PermissionManager:
             "modify_file",
             "run_tests",
             "git_diff",
+            "run_command",
         },
         "qa": {
             "read_file",

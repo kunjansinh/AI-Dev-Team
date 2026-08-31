@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.agents.base_agent import BaseAgent
+from app.core.tool_manager import ToolManager
 from app.tools.testing import TestingTool
 
 
@@ -18,6 +19,7 @@ class DeveloperAgent(BaseAgent):
         llm_client,
         workspace: str = "projects/demo_project",
         testing_tool: TestingTool | None = None,
+        tool_manager: ToolManager | None = None,
     ) -> None:
         super().__init__(
             name="developer",
@@ -34,6 +36,7 @@ class DeveloperAgent(BaseAgent):
         )
 
         self.testing_tool = testing_tool or TestingTool()
+        self.tool_manager = tool_manager
 
     def execute(
         self,
@@ -68,25 +71,10 @@ class DeveloperAgent(BaseAgent):
             written_files: list[str] = []
 
             for relative_path, content in generated_files.items():
-                path = self._safe_workspace_path(
-                    relative_path
-                )
-
-                path.parent.mkdir(
-                    parents=True,
-                    exist_ok=True,
-                )
-
-                path.write_text(
-                    content,
-                    encoding="utf-8",
-                )
-
                 written_files.append(
-                    str(
-                        path.relative_to(
-                            self.workspace
-                        )
+                    self._write_generated_file(
+                        relative_path,
+                        content,
                     )
                 )
 
@@ -109,9 +97,7 @@ class DeveloperAgent(BaseAgent):
                     ),
                 }
             else:
-                validation = self.testing_tool.run_pytest(
-                    self.workspace
-                )
+                validation = self._run_validation()
 
             result = {
                 "task_id": task_id,
@@ -163,6 +149,53 @@ class DeveloperAgent(BaseAgent):
                     "error": str(exc),
                 },
             }
+
+    def _write_generated_file(
+        self,
+        relative_path: str,
+        content: str,
+    ) -> str:
+        """Write through the controlled tool gateway when configured."""
+
+        path = self._safe_workspace_path(relative_path)
+
+        if self.tool_manager is None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+            return str(path.relative_to(self.workspace)).replace("\\", "/")
+
+        tool_name = "modify_file" if path.exists() else "create_file"
+        result = self.tool_manager.execute(
+            self.name,
+            tool_name,
+            relative_path=relative_path,
+            content=content,
+        )
+
+        if result["status"] != "success":
+            raise PermissionError(
+                result.get("error", "Tool execution failed.")
+            )
+
+        return str(result["result"])
+
+    def _run_validation(self) -> dict[str, Any]:
+        """Run pytest through the controlled tool gateway when configured."""
+
+        if self.tool_manager is None:
+            return self.testing_tool.run_pytest(self.workspace)
+
+        result = self.tool_manager.execute(
+            self.name,
+            "run_tests",
+        )
+
+        if result["status"] != "success":
+            raise RuntimeError(
+                result.get("error", "Test tool failed.")
+            )
+
+        return result["result"]
 
     def _build_developer_prompt(
         self,

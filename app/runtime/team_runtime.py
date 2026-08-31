@@ -11,6 +11,7 @@ from app.core.state_manager import StateManager
 from app.core.task_manager import TaskManager
 from app.tools.llm.model_router import ModelRouter
 from app.tools.testing import TestingTool
+from app.tools.workspace_registry import create_workspace_tool_manager
 
 
 class TeamRuntime:
@@ -33,6 +34,9 @@ class TeamRuntime:
         self.task_manager = task_manager
         self.router = router or ModelRouter()
         self.agent_manager = AgentManager()
+        self.tool_manager = create_workspace_tool_manager(
+            developer_workspace,
+        )
 
         self.manager = ManagerAgent(
             state_manager=state_manager,
@@ -52,6 +56,7 @@ class TeamRuntime:
             ),
             workspace=developer_workspace,
             testing_tool=TestingTool(),
+            tool_manager=self.tool_manager,
         )
 
         self.specialists = create_specialist_agents(
